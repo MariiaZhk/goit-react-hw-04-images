@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 import { SearchBar } from '../SearchBar/SearchBar';
 import { fetchImages } from '../../services/api';
 import { Loader } from 'components/Loader/Loader';
@@ -14,28 +14,23 @@ const paramsNotify = {
   fontSize: '36px',
 };
 
-export class App extends Component {
-  state = {
-    images: [],
-    searchQuery: '',
-    page: 1,
-    loading: false,
-    loadMoreBtn: true,
-    isModalOpen: false,
-    modalImgURL: '',
-  };
+export const App = () => {
+  const [images, setImages] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  // const [loadMoreBtn, setLoadMoreBtn] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalImgURL, setModalImgURL] = useState('');
 
-  async componentDidUpdate(_, prevState) {
-    if (
-      prevState.searchQuery !== this.state.searchQuery ||
-      prevState.page !== this.state.page
-    ) {
+  useEffect(() => {
+    async function getPhotos() {
       try {
-        this.setState({ loading: true });
-        const { hits } = await fetchImages(
-          this.state.searchQuery,
-          this.state.page
-        );
+        setLoading(true);
+        const { hits } = await fetchImages(searchQuery, page);
+        page === 1
+          ? setImages(hits)
+          : setImages(prevState => [...prevState, ...hits]);
 
         if (hits.length === 0) {
           return Notify.failure(
@@ -43,22 +38,21 @@ export class App extends Component {
             paramsNotify
           );
         }
-
-        this.setState({
-          images: this.state.page === 1 ? hits : [...prevState.images, ...hits],
-        });
       } catch (error) {
         Notify.failure(
           'Oops, something went wrong.Try to refresh this page or make another search.',
           paramsNotify
         );
       } finally {
-        this.setState({ loading: false });
+        setLoading(false);
       }
     }
-  }
+    if (searchQuery) {
+      getPhotos();
+    }
+  }, [searchQuery, page]);
 
-  handleSubmit = event => {
+  const handleSubmit = event => {
     event.preventDefault();
     const searchValue = event.currentTarget.elements.searchQuery.value;
 
@@ -67,57 +61,49 @@ export class App extends Component {
       return;
     }
 
-    if (searchValue === this.state.searchQuery) {
+    if (searchValue === searchQuery) {
       Notify.warning('Enter a new search query, please!', paramsNotify);
       event.currentTarget.reset();
       return;
     }
 
-    this.setState({
-      searchQuery: searchValue,
-      page: 1,
-      loading: true,
-    });
+    setSearchQuery(searchValue);
+    setPage(1);
+    setLoading(true);
     event.currentTarget.reset();
   };
 
-  incrementPage = async () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const incrementPage = async () => {
+    setPage(prevState => prevState + 1);
   };
 
-  onImageClick = url => {
-    this.setState({ modalImgURL: url, isModalOpen: true });
+  const onImageClick = url => {
+    setModalImgURL(url);
+    setIsModalOpen(true);
   };
 
-  onCloseModal = () => {
-    this.setState({ isModalOpen: false });
+  const onCloseModal = () => {
+    setIsModalOpen(false);
   };
 
-  render() {
-    const { loading, images, isModalOpen, modalImgURL } = this.state;
-    console.log(this.state);
-    return (
-      <AppSection>
-        <SearchBar handleSubmit={this.handleSubmit}></SearchBar>
-        {loading && <Loader />}
+  return (
+    <AppSection>
+      <SearchBar handleSubmit={handleSubmit}></SearchBar>
+      {loading && <Loader />}
 
-        <ImageGallery
-          images={images}
-          onImageClick={this.onImageClick}
-        ></ImageGallery>
+      <ImageGallery images={images} onImageClick={onImageClick}></ImageGallery>
 
-        {images.length > 0 && (
-          <LoadMoreButton incrementPage={this.incrementPage}></LoadMoreButton>
-        )}
+      {images.length > 0 && (
+        <LoadMoreButton incrementPage={incrementPage}></LoadMoreButton>
+      )}
 
-        {isModalOpen && (
-          <Modal
-            modalImgURL={modalImgURL}
-            onCloseModal={this.onCloseModal}
-            isModalOpen={isModalOpen}
-          />
-        )}
-      </AppSection>
-    );
-  }
-}
+      {isModalOpen && (
+        <Modal
+          modalImgURL={modalImgURL}
+          onCloseModal={onCloseModal}
+          isModalOpen={isModalOpen}
+        />
+      )}
+    </AppSection>
+  );
+};
