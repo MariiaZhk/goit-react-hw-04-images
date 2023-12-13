@@ -28,16 +28,15 @@ export const App = () => {
         setLoading(true);
         const { hits } = await fetchImages(searchQuery, page);
 
-        page === 1
-          ? setImages(hits)
-          : setImages(prevState => [...prevState, ...hits]);
-
         if (hits.length === 0) {
           return Notify.failure(
             'Sorry, there are no images matching your search query. Please try again.',
             paramsNotify
           );
         }
+        page === 1
+          ? setImages(hits)
+          : setImages(prevState => [...prevState, ...hits]);
       } catch (error) {
         Notify.failure(
           'Oops, something went wrong.Try to refresh this page or make another search.',
