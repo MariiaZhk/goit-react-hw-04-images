@@ -19,7 +19,6 @@ export const App = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
-  // const [loadMoreBtn, setLoadMoreBtn] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalImgURL, setModalImgURL] = useState('');
 
@@ -28,6 +27,7 @@ export const App = () => {
       try {
         setLoading(true);
         const { hits } = await fetchImages(searchQuery, page);
+
         page === 1
           ? setImages(hits)
           : setImages(prevState => [...prevState, ...hits]);
@@ -50,7 +50,7 @@ export const App = () => {
     if (searchQuery) {
       getPhotos();
     }
-  }, [searchQuery, page]);
+  }, [page, searchQuery]);
 
   const handleSubmit = event => {
     event.preventDefault();
